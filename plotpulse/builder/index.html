@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Builder dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/base.css">
+  <link rel="stylesheet" href="../assets/dashboard.css">
+</head>
+<body>
+  <!-- Sign in -->
+  <main class="login" id="loginView" hidden>
+    <form class="login-card" id="loginForm">
+      <span class="brand-mark" id="loginMark">SD</span>
+      <h1>Builder dashboard</h1>
+      <p class="login-sub" id="loginColony"></p>
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="username" required>
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" required>
+      <p class="login-error" id="loginError" role="alert"></p>
+      <button class="btn-primary" id="loginBtn" type="submit">Sign in</button>
+      <p class="login-hint" id="loginHint"></p>
+    </form>
+  </main>
+
+  <!-- Dashboard -->
+  <div id="appView" hidden>
+    <header class="dash-top">
+      <div class="dash-wrap dash-top-inner">
+        <div class="dash-title">
+          <span class="brand-mark" id="dashMark">SD</span>
+          <div>
+            <strong id="dashColony"></strong>
+            <span>Builder dashboard <em class="mode" id="modeBadge"></em></span>
+          </div>
+        </div>
+        <div class="dash-actions">
+          <label class="visually-hidden" for="period">Time period</label>
+          <select id="period" class="select">
+            <option value="7">Last 7 days</option>
+            <option value="30" selected>Last 30 days</option>
+            <option value="90">Last 90 days</option>
+          </select>
+          <a class="link-btn" href="../index.html" target="_blank" rel="noopener">Public page</a>
+          <button class="link-btn" id="signOut" type="button">Sign out</button>
+        </div>
+      </div>
+      <nav class="dash-wrap tabs" aria-label="Dashboard sections">
+        <a href="#overview">Overview</a>
+        <a href="#demand">Demand map</a>
+        <a href="#insights">What buyers want</a>
+        <a href="#marketing">Marketing</a>
+        <a href="#inventory">Plots and allotment</a>
+        <a href="#settings">Settings</a>
+      </nav>
+    </header>
+
+    <main class="dash-wrap">
+      <section id="overview" class="block">
+        <div class="kpis" id="kpis"></div>
+      </section>
+
+      <section id="demand" class="block">
+        <div class="block-head">
+          <h2>Where buyers are looking</h2>
+          <p>Darker plots were opened by more people. Tap a plot or shop for its numbers and to allot it.</p>
+        </div>
+        <div class="demand-layout">
+          <div class="panel">
+            <div class="plan-scroll"><div class="plan-canvas" id="heatPlan"></div></div>
+            <div class="ramp-legend" id="rampLegend"></div>
+          </div>
+          <aside class="panel plot-panel" id="plotPanel">
+            <p class="muted">Select a plot on the map.</p>
+          </aside>
+        </div>
+      </section>
+
+      <section id="insights" class="block">
+        <div class="block-head">
+          <h2>What buyers want</h2>
+          <p>Average number of people who opened each plot or shop, so groups with many units don't look bigger than they are.</p>
+        </div>
+        <div class="grid-3">
+          <figure class="panel chart"><figcaption>By plot size</figcaption><div id="chSize"></div></figure>
+          <figure class="panel chart"><figcaption>By facing</figcaption><div id="chFacing"></div></figure>
+          <figure class="panel chart"><figcaption>By type</figcaption><div id="chType"></div></figure>
+        </div>
+        <div class="grid-2">
+          <div class="panel">
+            <h3>Most viewed</h3>
+            <div class="table-wrap"><table class="table" id="tblTop"></table></div>
+          </div>
+          <div class="panel">
+            <h3>Many views, few enquiries</h3>
+            <p class="muted small">People keep opening these but rarely message. Worth checking the price, or calling past enquirers.</p>
+            <div class="table-wrap"><table class="table" id="tblCold"></table></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="marketing" class="block">
+        <div class="block-head">
+          <h2>Marketing</h2>
+          <p>Which hoardings, brochures and links bring people in, and when they visit.</p>
+        </div>
+        <div class="grid-2">
+          <figure class="panel chart"><figcaption>Visitors and enquiries by source</figcaption><div id="chSource"></div></figure>
+          <figure class="panel chart"><figcaption>Visitors per day</figcaption><div id="chDaily"></div></figure>
+        </div>
+        <figure class="panel chart"><figcaption>Busiest times (visitors by day and hour)</figcaption><div id="chHours"></div></figure>
+      </section>
+
+      <section id="inventory" class="block">
+        <div class="block-head">
+          <h2>Plots and allotment</h2>
+          <p>Mark a plot or shop as allotted once the deal is done. It turns grey on the public page straight away. E.W.S. plots aren't listed here because they're reserved.</p>
+        </div>
+        <div class="panel">
+          <div class="inv-tools">
+            <input class="search" id="invSearch" type="search" placeholder="Find a plot or shop number" aria-label="Find a plot or shop number">
+            <select class="select" id="invFilter" aria-label="Show">
+              <option value="all">All plots and shops</option>
+              <option value="plot">Plots</option>
+              <option value="shop">Shops</option>
+              <option value="available">Available</option>
+              <option value="allotted">Allotted</option>
+            </select>
+            <span class="muted" id="invSummary"></span>
+          </div>
+          <div class="table-wrap"><table class="table" id="tblInv"></table></div>
+        </div>
+      </section>
+
+      <section id="settings" class="block">
+        <div class="block-head">
+          <h2>Settings</h2>
+          <p>How the public page decides which plots show as high demand.</p>
+        </div>
+        <form class="panel settings" id="settingsForm">
+          <label>Count viewers over the last
+            <span class="inline-input"><input type="number" id="sWindow" min="1" max="90" required> days</span>
+          </label>
+          <label>Mark the top
+            <span class="inline-input"><input type="number" id="sTop" min="1" max="100" required> % most-viewed available plots as high demand</span>
+          </label>
+          <label>Show "people viewed" on a plot only from
+            <span class="inline-input"><input type="number" id="sMin" min="0" max="1000" required> viewers</span>
+          </label>
+          <div><button class="btn-primary" type="submit">Save settings</button> <span class="muted" id="settingsMsg" role="status"></span></div>
+        </form>
+      </section>
+    </main>
+
+    <footer class="dash-wrap dash-foot">
+      <p>Counts are anonymous: one browser opening the same plot on the same day counts once. Names and numbers of enquirers arrive on your WhatsApp, not here.</p>
+    </footer>
+  </div>
+
+  <div class="tooltip" id="tooltip" role="tooltip" hidden></div>
+  <div class="toast" id="toast" role="status" hidden></div>
+
+  <script src="../colony/config.js"></script>
+  <script src="../assets/store.js"></script>
+  <script src="../assets/plan.js"></script>
+  <script src="../assets/dashboard.js"></script>
+</body>
+</html>
