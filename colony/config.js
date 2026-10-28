@@ -22,7 +22,7 @@ window.PLOTPULSE_CONFIG = {
   },
 
   // Buyer enquiries go to this WhatsApp number (country code, no + or spaces)
-  whatsapp: "919999999999",
+  whatsapp: "918146895596",
   // {unit} becomes "Plot No. 47" or "Shop No. 5"
   whatsappMessage: "Hi, I'm interested in {unit} in {colony}. Please share the price and details.",
 
