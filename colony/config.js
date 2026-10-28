@@ -97,8 +97,8 @@ window.PLOTPULSE_CONFIG = {
   // Leave empty to run in demo mode (data stays in this browser only).
   // Fill both to go live — see README.
   supabase: {
-    url: "",
-    anonKey: "",
+    url: "https://ducgyifjfhedhvejgqif.supabase.co",
+    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR1Y2d5aWZqZmhlZGh2ZWpncWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxODc2NTAsImV4cCI6MjEwODc2MzY1MH0.EWTHMPlpahy-ucw5fg6UyL0a6_sdaRRpaEPl01NQbuQ",
   },
 
   // Demo mode only: password for the builder dashboard
