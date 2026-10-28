@@ -357,7 +357,7 @@
    "facing": "West",
    "corner": false,
    "parkFacing": false,
-   "status": "allotted"
+   "status": "available"
   },
   {
    "no": "51",
@@ -387,7 +387,7 @@
    "facing": "West",
    "corner": false,
    "parkFacing": false,
-   "status": "allotted"
+   "status": "available"
   },
   {
    "no": "53",
@@ -462,7 +462,7 @@
    "facing": "West",
    "corner": false,
    "parkFacing": false,
-   "status": "allotted"
+   "status": "available"
   },
   {
    "no": "58",
@@ -552,7 +552,7 @@
    "facing": "West",
    "corner": false,
    "parkFacing": false,
-   "status": "allotted"
+   "status": "available"
   },
   {
    "no": "64",
@@ -747,7 +747,7 @@
    "facing": "West",
    "corner": false,
    "parkFacing": false,
-   "status": "allotted"
+   "status": "available"
   },
   {
    "no": "44",
@@ -882,7 +882,7 @@
    "facing": "East",
    "corner": false,
    "parkFacing": false,
-   "status": "allotted"
+   "status": "available"
   },
   {
    "no": "21",
@@ -897,7 +897,7 @@
    "facing": "West",
    "corner": false,
    "parkFacing": false,
-   "status": "allotted"
+   "status": "available"
   },
   {
    "no": "39",
@@ -1002,7 +1002,7 @@
    "facing": "East",
    "corner": false,
    "parkFacing": false,
-   "status": "allotted"
+   "status": "available"
   },
   {
    "no": "25",
@@ -1077,7 +1077,7 @@
    "facing": "West",
    "corner": false,
    "parkFacing": false,
-   "status": "allotted"
+   "status": "available"
   },
   {
    "no": "33",
@@ -1092,7 +1092,7 @@
    "facing": "East",
    "corner": false,
    "parkFacing": false,
-   "status": "allotted"
+   "status": "available"
   },
   {
    "no": "28",
@@ -1182,7 +1182,7 @@
    "facing": "North",
    "corner": true,
    "parkFacing": false,
-   "status": "allotted"
+   "status": "available"
   },
   {
    "no": "10",
@@ -1332,7 +1332,7 @@
    "facing": "East",
    "corner": false,
    "parkFacing": false,
-   "status": "allotted"
+   "status": "available"
   },
   {
    "no": "1",
@@ -1392,7 +1392,7 @@
    "facing": "West",
    "corner": false,
    "parkFacing": false,
-   "status": "allotted"
+   "status": "available"
   },
   {
    "no": "S4",
@@ -1407,7 +1407,7 @@
    "facing": "West",
    "corner": false,
    "parkFacing": false,
-   "status": "allotted"
+   "status": "available"
   },
   {
    "no": "S5",
@@ -1692,7 +1692,7 @@
    "facing": "West",
    "corner": false,
    "parkFacing": false,
-   "status": "allotted"
+   "status": "available"
   },
   {
    "no": "S15",
@@ -1707,7 +1707,7 @@
    "facing": "West",
    "corner": false,
    "parkFacing": false,
-   "status": "allotted"
+   "status": "available"
   },
   {
    "no": "S16",
@@ -1842,7 +1842,7 @@
    "facing": "East",
    "corner": true,
    "parkFacing": false,
-   "status": "allotted"
+   "status": "available"
   },
   {
    "no": "69",
