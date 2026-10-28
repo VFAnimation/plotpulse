@@ -1,0 +1,6 @@
+unit_no,type,width_ft,depth_ft,facing,corner,park_facing,status
+1,plot,25,45,East,Y,N,available
+2,plot,25,45,East,N,N,allotted
+49,plot,25,50,West,N,Y,available
+S1,shop,10,25,West,Y,N,available
+73,ews,21,45,East,N,N,reserved
