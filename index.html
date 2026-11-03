@@ -85,13 +85,12 @@
 
         <div class="plan-layout">
           <div class="plan-card">
-            <div class="plan-scroll" id="planScroll">
-              <div class="plan-canvas" id="plan"></div>
-            </div>
-            <div class="zoom" role="group" aria-label="Zoom the plan">
-              <button type="button" id="zoomOut" aria-label="Zoom out">−</button>
-              <button type="button" id="zoomIn" aria-label="Zoom in">+</button>
-            </div>
+            <div class="plan-canvas" id="plan"></div>
+            <button class="expand-btn" type="button" id="openMap">
+              <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+              Full-screen map
+            </button>
+            <p class="plan-hint" id="planHint">Tap a plot for details. Shops are small, so tapping one opens the full-screen map, zoomed in.</p>
           </div>
 
           <aside class="sheet" id="sheet" aria-label="Plot details">
@@ -159,6 +158,31 @@
     </section>
   </main>
 
+  <!-- Full-screen map: pinch to zoom, drag to move, shortcuts to each block -->
+  <div class="mapview" id="mapView" role="dialog" aria-modal="true" aria-label="Full-screen map" hidden>
+    <div class="mv-top">
+      <div>
+        <strong id="mvTitle">Map</strong>
+        <ul class="mv-legend" aria-label="Colour key">
+          <li><span class="swatch available"></span>Available</li>
+          <li><span class="swatch demand"></span>In demand</li>
+          <li><span class="swatch allotted"></span>Allotted</li>
+          <li><span class="swatch ews"></span>E.W.S.</li>
+        </ul>
+      </div>
+      <button class="mv-close" type="button" id="closeMap" aria-label="Close the map">×</button>
+    </div>
+    <div class="mv-stage" id="mvStage"></div>
+    <div class="mv-zoom" role="group" aria-label="Zoom">
+      <button type="button" id="mvIn" aria-label="Zoom in">+</button>
+      <button type="button" id="mvOut" aria-label="Zoom out">−</button>
+      <button type="button" id="mvFit" aria-label="Show the whole colony">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+      </button>
+    </div>
+    <div class="mv-areas" id="mvAreas" role="group" aria-label="Jump to a part of the colony"></div>
+  </div>
+
   <footer class="foot">
     <div class="wrap foot-inner">
       <div>
@@ -176,6 +200,7 @@
   <script src="colony/config.js"></script>
   <script src="assets/store.js"></script>
   <script src="assets/plan.js"></script>
+  <script src="assets/panzoom.js"></script>
   <script src="assets/public.js"></script>
 </body>
 </html>

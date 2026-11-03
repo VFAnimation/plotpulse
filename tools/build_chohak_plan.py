@@ -81,7 +81,7 @@ unit(69, "plot", 1943.9, 787.4, 2011.8, 938.3, 22.5, 50, "East")
 unit(71, "plot", 1876.0, 938.3, 2011.8, 1009.9, 45, 23.75, "North", corner=True)
 
 # Sample: a few units already allotted, so the demo looks like a launched project.
-SAMPLE_ALLOTTED = {"50", "52", "57", "63", "33", "36", "40", "16", "21", "27", "9", "2", "70", "S3", "S4", "S14", "S15"}
+SAMPLE_ALLOTTED = set()   # real launch: everything starts available; the builder allots from the dashboard
 for u in units:
     if u["no"] in SAMPLE_ALLOTTED: u["status"] = "allotted"
 
@@ -126,12 +126,23 @@ for y in range(170, 780, 70): trees.append(P(206, y))
 for x, y in [(250, 180), (330, 175), (460, 180), (250, 255), (340, 250), (335, 425), (245, 470), (345, 470), (245, 420), (420, 230)]:
     trees.append(P(x, y))
 
+# Shortcuts in the full-screen map: tapping one zooms straight to that part of the colony
+areas = [
+    {"label": "Plots 49–68", **rect(495, 120, 2035, 300)},
+    {"label": "Plots 31–48", **rect(455, 376, 1928, 545)},
+    {"label": "Plots 13–30", **rect(455, 534, 1928, 704)},
+    {"label": "Plots 5–12, park", **rect(212, 120, 620, 792)},
+    {"label": "Plots 1–4, shops 1–10", **rect(808, 780, 1126, by(1126) + 4)},
+    {"label": "Shops 11–22, plot 72", **rect(1232, 780, 1792, by(1792) + 4)},
+    {"label": "Plots 69–71", **rect(1868, 600, 2170, by(2170) + 4)},
+]
+
 plan = {
     "viewBox": [0, 0, W, H],
     "compass": {"up": "E", "x": W - 70, "y": 70},
     "boundary": boundary, "mainRoad": road_main, "mainRoadLabel": main_label,
     "blocks": blocks, "features": features, "labels": labels, "gate": gate,
-    "trees": [list(t) for t in trees], "units": units,
+    "trees": [list(t) for t in trees], "areas": areas, "units": units,
 }
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 out = os.path.join(root, "colony", "plots.json")

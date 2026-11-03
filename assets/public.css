@@ -133,13 +133,49 @@ html { scroll-behavior: smooth; scroll-padding-top: 90px; }
 
 .plan-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
 .plan-card { position: relative; background: var(--paper); border-radius: 20px; padding: 10px; box-shadow: 0 0 0 1px var(--line), 0 20px 40px -24px rgba(60, 48, 25, 0.25); }
-.plan-scroll { overflow: auto; border-radius: 12px; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
-.plan-canvas { width: calc(100% * var(--zoom, 1)); }
-.zoom { position: absolute; right: 20px; bottom: 20px; display: flex; flex-direction: column; background: var(--paper); border-radius: 12px; box-shadow: 0 4px 14px rgba(40, 45, 40, 0.16); overflow: hidden; }
-.zoom button { width: 42px; height: 42px; border: 0; background: none; font-size: 22px; cursor: pointer; }
-.zoom button + button { border-top: 1px solid var(--line); }
-.zoom button:hover { background: var(--wheat); }
-.zoom button:disabled { color: var(--ink-3); cursor: default; background: none; }
+.plan-canvas { border-radius: 12px; overflow: hidden; }
+.expand-btn {
+  position: absolute; right: 22px; top: 22px; display: inline-flex; align-items: center; gap: 8px;
+  border: 0; border-radius: 999px; padding: 9px 16px 9px 12px; cursor: pointer;
+  background: rgba(252, 250, 245, 0.94); color: var(--ink); font: 500 14px var(--font-body);
+  box-shadow: 0 4px 14px rgba(40, 45, 40, 0.16);
+}
+.expand-btn svg { width: 18px; height: 18px; }
+.expand-btn:hover { background: var(--paper); }
+.plan-hint { display: none; margin: 10px 6px 4px; font-size: 14px; color: var(--ink-3); }
+
+/* ---------- Full-screen map ---------- */
+body.map-open { overflow: hidden; }
+.mapview { position: fixed; inset: 0; z-index: 55; background: var(--land); display: flex; flex-direction: column; }
+.mv-top {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: calc(10px + env(safe-area-inset-top)) 12px 10px 18px; background: var(--paper);
+  box-shadow: 0 1px 0 var(--line);
+}
+.mv-top strong { font: 600 22px var(--font-display); display: block; line-height: 1.1; }
+.mv-legend { display: flex; gap: 4px 14px; flex-wrap: wrap; list-style: none; margin: 4px 0 0; padding: 0; font-size: 13px; color: var(--ink-2); }
+.mv-legend .swatch { width: 11px; height: 11px; margin-right: 5px; }
+.mv-close { flex: none; width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--wheat); font-size: 26px; line-height: 1; cursor: pointer; }
+.mv-stage { position: relative; flex: 1; min-height: 0; }
+.mv-stage .plan-svg { width: 100%; height: 100%; cursor: grab; }
+.mv-stage .plan-svg:active { cursor: grabbing; }
+.mv-zoom { position: absolute; right: 14px; top: calc(90px + env(safe-area-inset-top)); display: flex; flex-direction: column; background: var(--paper); border-radius: 14px; box-shadow: 0 4px 14px rgba(40, 45, 40, 0.18); overflow: hidden; }
+.mv-zoom button { width: 46px; height: 46px; border: 0; background: none; font-size: 24px; cursor: pointer; display: grid; place-items: center; }
+.mv-zoom button + button { border-top: 1px solid var(--line); }
+.mv-zoom button:hover { background: var(--wheat); }
+.mv-zoom svg { width: 20px; height: 20px; }
+.mv-areas {
+  display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+  padding: 10px 12px calc(12px + env(safe-area-inset-bottom)); background: var(--paper); box-shadow: 0 -1px 0 var(--line);
+}
+.mv-areas::-webkit-scrollbar { display: none; }
+.mv-areas .chip { flex: none; white-space: nowrap; }
+/* the details panel floats over the full-screen map */
+body.map-open .sheet { z-index: 60; }
+@media (min-width: 921px) {
+  body.map-open .sheet { position: fixed; top: 90px; right: 76px; width: 360px; max-height: calc(100vh - 170px); overflow-y: auto; box-shadow: 0 10px 40px rgba(31, 45, 38, 0.25); }
+  body.map-open .sheet:not(.is-open) { display: none; }
+}
 
 /* Details sheet */
 .sheet { position: sticky; top: 96px; background: var(--paper); border-radius: 20px; padding: 24px; box-shadow: 0 0 0 1px var(--line); min-height: 320px; }
@@ -229,6 +265,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 90px; }
 @media (max-width: 920px) {
   .nav-links { display: none; }
   .plan-layout { grid-template-columns: minmax(0, 1fr); }
+  .plan-hint { display: block; }
   .sheet {
     position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 60; min-height: 0;
     border-radius: 22px 22px 0 0; padding: 22px 20px calc(20px + env(safe-area-inset-bottom));
@@ -255,10 +292,10 @@ html { scroll-behavior: smooth; scroll-padding-top: 90px; }
   .sizes .sep { display: none; }
   .plots, .tour, .location { padding: 60px 0; }
   .plan-card { margin: 0 -8px; padding: 6px; border-radius: 16px; }
+  .expand-btn { right: 14px; top: 14px; }
   .counts { flex-wrap: nowrap; gap: 8px; }
   .count { flex: 1; padding: 10px 12px; gap: 8px; }
   .count b { font-size: 28px; }
   .count span { font-size: 14px; line-height: 1.25; }
-  .zoom { right: 12px; bottom: 12px; }
   .foot-name { font-size: 32px; }
 }

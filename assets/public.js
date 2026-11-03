@@ -159,45 +159,94 @@
     (!filters.corner || u.corner) && (!filters.park || u.parkFacing) &&
     (!filters.availableOnly || u.status === "available");
   const anyFilter = () => filters.kind !== "all" || filters.size !== "all" || filters.facing !== "all" || filters.corner || filters.park || filters.availableOnly;
-  function applyFilters() { plan.dim(anyFilter() ? matches : null); }
+  function applyFilters() { eachPlan((p) => p.dim(anyFilter() ? matches : null)); }
 
   // ---------- Plan ----------
-  let plan, selected = null;
-  function drawPlan() {
-    plan = window.PlotPlan.render($("plan"), Store.plan, units, { look, onSelect: openUnit });
-    applyFilters();
-    if (selected) plan.select(selected.no);
+  // Two copies of the plan: the one on the page, and the full-screen map (when open).
+  // On phones held upright both are turned 90° so North is at the top and plots are bigger.
+  let plan = null, big = null, pz = null, selected = null;
+  const phone = window.matchMedia("(max-width: 720px)");
+  const eachPlan = (fn) => { if (plan) fn(plan); if (big) fn(big); };
+  const isShopTapOnPhone = (u) => u.kind === "shop" && phone.matches && !big;
+
+  function onTap(u) {
+    // shops are too small to hit reliably on a phone: zoom in on them first
+    if (isShopTapOnPhone(u)) { openMap(areaFor(u)); return; }
+    openUnit(u);
   }
 
-  // Zoom: phones start zoomed in so plots are big enough to tap; scroll to pan.
-  const sc = $("planScroll");
-  const ZOOMS = [1, 1.5, 2, 2.6, 3.4, 4.4];
-  let zi = window.matchMedia("(max-width: 560px)").matches ? 3 : window.matchMedia("(max-width: 920px)").matches ? 1 : 0;
-  function setZoom(next, keepCentre = true) {
-    const cx = (sc.scrollLeft + sc.clientWidth / 2) / sc.scrollWidth;
-    const cy = (sc.scrollTop + sc.clientHeight / 2) / sc.scrollHeight;
-    zi = Math.max(0, Math.min(ZOOMS.length - 1, next));
-    $("plan").style.setProperty("--zoom", ZOOMS[zi]);
-    // keep the visible plan no taller than the screen allows when zoomed
-    sc.style.maxHeight = zi ? Math.round(window.innerHeight * 0.7) + "px" : "";
-    if (keepCentre) {
-      sc.scrollLeft = cx * sc.scrollWidth - sc.clientWidth / 2;
-      sc.scrollTop = cy * sc.scrollHeight - sc.clientHeight / 2;
-    }
-    $("zoomOut").disabled = zi === 0;
-    $("zoomIn").disabled = zi === ZOOMS.length - 1;
+  function drawPlan() {
+    plan = window.PlotPlan.render($("plan"), Store.plan, units, { look, onSelect: onTap, rotate: phone.matches });
+    // the full-screen map isn't redrawn here, so a refresh doesn't reset someone's zoom
+    applyFilters();
+    if (selected) eachPlan((p) => p.select(selected.no));
   }
-  $("zoomIn").addEventListener("click", () => setZoom(zi + 1));
-  $("zoomOut").addEventListener("click", () => setZoom(zi - 1));
+
+  // ---------- Full-screen map ----------
+  const areas = Store.plan.areas || [];
+  const unitBox = (u) => ({ x: u.x, y: u.y, w: u.w, h: u.h });
+  const inside = (u, a) => u.x + u.w / 2 >= a.x && u.x + u.w / 2 <= a.x + a.w && u.y + u.h / 2 >= a.y && u.y + u.h / 2 <= a.y + a.h;
+  function areaFor(u) { return areas.find((a) => inside(u, a)) || unitBox(u); }
+
+  $("mvTitle").textContent = `${C.name} map`;
+  $("mvAreas").innerHTML = areas.map((a, i) => `<button class="chip" type="button" data-area="${i}">${esc(a.label)}</button>`).join("");
+
+  function drawBig() {
+    const stage = $("mvStage");
+    const portrait = stage.clientHeight > stage.clientWidth;
+    if (pz) pz.destroy();
+    big = window.PlotPlan.render(stage, Store.plan, units, { look, onSelect: onTap, rotate: portrait });
+    pz = window.PanZoom(big.svg, { width: big.outerW, height: big.outerH, minWidth: 140 });
+    applyFilters();
+    if (selected) big.select(selected.no);
+  }
+  function openMap(focusArea) {
+    const v = $("mapView");
+    if (v.hidden) {
+      v.hidden = false;
+      document.body.classList.add("map-open");
+      try { history.pushState({ ppMap: 1 }, ""); } catch (e) { /* ignore */ }
+      drawBig();
+    }
+    if (focusArea) pz.focus(big.toOuter(focusArea), 0.06);
+  }
+  function closeMap(fromHistory) {
+    const v = $("mapView");
+    if (v.hidden) return;
+    v.hidden = true;
+    document.body.classList.remove("map-open");
+    if (pz) pz.destroy();
+    pz = null; big = null; $("mvStage").innerHTML = "";
+    if (!fromHistory && history.state && history.state.ppMap) history.back();
+  }
+  $("openMap").addEventListener("click", () => openMap());
+  $("closeMap").addEventListener("click", () => closeMap());
+  window.addEventListener("popstate", () => closeMap(true));
+  $("mvIn").addEventListener("click", () => pz && pz.zoom(1.6));
+  $("mvOut").addEventListener("click", () => pz && pz.zoom(1 / 1.6));
+  $("mvFit").addEventListener("click", () => pz && pz.fit());
+  $("mvAreas").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-area]"); if (!b || !pz) return;
+    pz.focus(big.toOuter(areas[+b.dataset.area]), 0.06);
+  });
+
+  // Turning the phone or resizing: redraw in the right orientation
+  let lastPortrait = null;
+  window.addEventListener("resize", () => {
+    clearTimeout(drawPlan._t);
+    drawPlan._t = setTimeout(() => {
+      const st = $("mvStage");
+      const portrait = st.clientHeight > st.clientWidth;
+      if (big && portrait !== lastPortrait) drawBig();
+      lastPortrait = portrait;
+      if (!!(plan && plan.svg.classList.contains("is-rotated")) !== phone.matches) drawPlan();
+    }, 150);
+  });
 
   drawPlan();
   renderHero();
   renderSizes();
   renderCounts();
-  setZoom(zi, false);
-  // start phones looking at the middle of the colony
-  sc.scrollLeft = (sc.scrollWidth - sc.clientWidth) * 0.42;
-  sc.scrollTop = (sc.scrollHeight - sc.clientHeight) * 0.4;
 
   // ---------- Plot details ----------
   const waIcon = `<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1 0-.3-.1-.5-.2z"/></svg>`;
@@ -209,7 +258,7 @@
 
   function openUnit(u) {
     selected = u;
-    plan.select(u.no);
+    eachPlan((p) => p.select(u.no));
     Store.track("plot_view", u.no);
     const d = demand.byPlot[u.no] || { viewers: 0 };
     const st = stateOf(u);
@@ -263,7 +312,7 @@
   function closeSheet() {
     $("sheet").classList.remove("is-open");
     selected = null;
-    plan.select(null);
+    eachPlan((p) => p.select(null));
     $("sheetBody").hidden = true; $("sheetEmpty").hidden = false;
   }
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && selected) closeSheet(); });

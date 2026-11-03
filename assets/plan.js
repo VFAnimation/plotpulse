@@ -5,6 +5,10 @@
  * colony/plots.json holds the layout: boundary, roads, blocks, park, amenities and
  * every unit (plot / shop / ews). A unit is a rectangle (x, y, w, h) or a polygon
  * ("points": "x1,y1 x2,y2 ..."), so angled plots in other colonies can be traced too.
+ *
+ * opts.rotate turns the whole layout 90° clockwise (for phones held upright).
+ * Text stays upright. The returned toOuter() converts a layout rectangle into the
+ * SVG's own coordinates, for zooming to a block.
  */
 (function () {
   const NS = "http://www.w3.org/2000/svg";
@@ -32,8 +36,10 @@
     const id = "pp" + ++uid;
     container.innerHTML = "";
     const [vx, vy, vw, vh] = plan.viewBox;
+    const rot = !!opts.rotate;
+    const outerW = rot ? vh : vw, outerH = rot ? vw : vh;
     const svg = el("svg", {
-      viewBox: `${vx} ${vy} ${vw} ${vh}`, class: "plan-svg" + (opts.static ? " is-static" : ""),
+      viewBox: `0 0 ${outerW} ${outerH}`, class: "plan-svg" + (opts.static ? " is-static" : "") + (rot ? " is-rotated" : ""),
       role: opts.static ? "img" : "group",
       "aria-label": opts.static ? "Model of the colony layout" : "Colony master plan. Select a plot or shop for details.",
     }, container);
@@ -55,72 +61,80 @@
     el("circle", { cx: 0, cy: 0, r: 12, fill: "#6f9a55" }, tree);
     el("circle", { cx: -3.5, cy: -3.5, r: 5.5, fill: "#8fb873" }, tree);
 
+    // Everything is drawn in layout coordinates inside `root`; when rotated, root turns
+    // 90° clockwise so the layout's left edge (North for Chohak Land) ends up on top.
+    const root = el("g", { transform: rot ? `translate(${vh} 0) rotate(90) translate(${-vx} ${-vy})` : (vx || vy ? `translate(${-vx} ${-vy})` : null) }, svg);
+    // keeps a label upright when the layout is rotated
+    const up = (x, y, extra) => (rot ? `rotate(-90 ${x} ${y})` : extra || null);
+
     // ---------- ground ----------
-    el("rect", { x: vx, y: vy, width: vw, height: vh, class: "land" }, svg);
+    el("rect", { x: vx, y: vy, width: vw, height: vh, class: "land" }, root);
     if (plan.mainRoad) {
-      el("polygon", { points: plan.mainRoad, class: "road-main" }, svg);
+      el("polygon", { points: plan.mainRoad, class: "road-main" }, root);
       const [a, b, c, d] = plan.mainRoad.split(" ").map((s) => s.split(",").map(Number));
       const midL = [(a[0] + d[0]) / 2, (a[1] + d[1]) / 2], midR = [(b[0] + c[0]) / 2, (b[1] + c[1]) / 2];
-      el("line", { x1: midL[0], y1: midL[1], x2: midR[0], y2: midR[1], class: "road-centre" }, svg);
+      el("line", { x1: midL[0], y1: midL[1], x2: midR[0], y2: midR[1], class: "road-centre" }, root);
     }
-    if (plan.boundary) el("polygon", { points: plan.boundary, class: "site" }, svg);
+    if (plan.boundary) el("polygon", { points: plan.boundary, class: "site" }, root);
 
     // internal road centre lines are implied; road labels
     for (const l of plan.labels || []) {
-      text(svg, l.text, { x: l.x, y: l.y, class: "road-label", "text-anchor": "middle", "dominant-baseline": "middle",
+      text(root, l.text, { x: l.x, y: l.y, class: "road-label", "text-anchor": "middle", "dominant-baseline": "middle",
         transform: l.rotate ? `rotate(${l.rotate} ${l.x} ${l.y})` : null });
     }
     if (plan.mainRoadLabel) {
       const l = plan.mainRoadLabel;
-      text(svg, l.text, { x: l.x, y: l.y, class: "road-label road-label-main", "text-anchor": "middle", "dominant-baseline": "middle",
+      text(root, l.text, { x: l.x, y: l.y, class: "road-label road-label-main", "text-anchor": "middle", "dominant-baseline": "middle",
         transform: l.rotate ? `rotate(${l.rotate} ${l.x} ${l.y})` : null });
     }
 
     // blocks the plots sit on
     for (const b of plan.blocks || []) {
-      el("rect", { x: b.x - 4, y: b.y - 4, width: b.w + 8, height: b.h + 8, rx: b.rx || 6, class: "block", filter: `url(#${id}sh)` }, svg);
+      el("rect", { x: b.x - 4, y: b.y - 4, width: b.w + 8, height: b.h + 8, rx: b.rx || 6, class: "block", filter: `url(#${id}sh)` }, root);
     }
 
     // park and amenities
     for (const f of plan.features || []) {
       if (f.kind === "park") {
-        el("polygon", { points: f.points, class: "park", fill: `url(#${id}grass)` }, svg);
-        const t = text(svg, f.label || "Park", { x: f.labelX, y: f.labelY, class: "park-label", "text-anchor": "middle" });
-        if (f.sub) text(svg, f.sub, { x: f.labelX, y: f.labelY + 36, class: "park-sub", "text-anchor": "middle" });
-        void t;
+        el("polygon", { points: f.points, class: "park", fill: `url(#${id}grass)` }, root);
+        const lg = el("g", { transform: up(f.labelX, f.labelY + 12) }, root);
+        text(lg, f.label || "Park", { x: f.labelX, y: f.labelY, class: "park-label", "text-anchor": "middle" });
+        if (f.sub) text(lg, f.sub, { x: f.labelX, y: f.labelY + 36, class: "park-sub", "text-anchor": "middle" });
       } else if (f.kind === "amenity") {
-        const r = el("rect", { x: f.x + 2, y: f.y + 2, width: f.w - 4, height: f.h - 4, rx: 5, class: "amenity amenity-" + f.style }, svg);
+        const r = el("rect", { x: f.x + 2, y: f.y + 2, width: f.w - 4, height: f.h - 4, rx: 5, class: "amenity amenity-" + f.style }, root);
         if (f.style === "parking") r.setAttribute("fill", `url(#${id}hatch)`);
         const cx = f.x + f.w / 2, cy = f.y + f.h / 2;
         const vertical = f.h > f.w * 1.6 && f.style === "utility";
-        const t = text(svg, f.label, { x: cx, y: f.label2 ? cy - 13 : cy + 1, class: "amenity-label", "text-anchor": "middle", "dominant-baseline": "middle",
-          transform: vertical ? `rotate(-90 ${cx} ${cy})` : null });
-        if (f.label2) text(svg, f.label2, { x: cx, y: cy + 15, class: "amenity-label", "text-anchor": "middle", "dominant-baseline": "middle" });
-        void t;
+        // long thin strips (parking) keep their label along the strip
+        const along = f.style === "parking" && rot;
+        const lg = el("g", { transform: along ? null : up(cx, cy, vertical ? `rotate(-90 ${cx} ${cy})` : null) }, root);
+        text(lg, f.label, { x: cx, y: f.label2 ? cy - 13 : cy + 1, class: "amenity-label", "text-anchor": "middle", "dominant-baseline": "middle" });
+        if (f.label2) text(lg, f.label2, { x: cx, y: cy + 15, class: "amenity-label", "text-anchor": "middle", "dominant-baseline": "middle" });
       }
     }
 
-    for (const t of plan.trees || []) el("use", { href: `#${id}tree`, x: t[0], y: t[1] }, svg);
+    for (const t of plan.trees || []) el("use", { href: `#${id}tree`, x: t[0], y: t[1] }, root);
 
     // gate
     if (plan.gate) {
-      const g = el("g", { class: "gate", transform: `translate(${plan.gate.x} ${plan.gate.y})` }, svg);
+      const g = el("g", { class: "gate", transform: `translate(${plan.gate.x} ${plan.gate.y})` }, root);
       el("rect", { x: -74, y: -9, width: 14, height: 18, rx: 3 }, g);
       el("rect", { x: 60, y: -9, width: 14, height: 18, rx: 3 }, g);
       el("path", { d: "M -67 -9 Q 0 -44 67 -9", class: "gate-arch" }, g);
-      if (!opts.static) text(g, "ENTRY", { x: 0, y: 36, class: "gate-label", "text-anchor": "middle" });
+      if (!opts.static) text(g, "ENTRY", { x: 0, y: rot ? 62 : 36, class: "gate-label", "text-anchor": "middle", transform: up(0, rot ? 62 : 36) });
     }
 
     // compass: arrow points to North
     if (plan.compass && !opts.static) {
       const rot = { N: 0, E: -90, S: 180, W: 90 }[plan.compass.up] || 0;
-      const g = el("g", { class: "compass", transform: `translate(${plan.compass.x} ${plan.compass.y}) scale(1.3)` }, svg);
+      const g = el("g", { class: "compass", transform: `translate(${plan.compass.x} ${plan.compass.y}) scale(1.3)` }, root);
       el("circle", { r: 40, class: "compass-ring" }, g);
       const a = el("g", { transform: `rotate(${rot})` }, g);
       el("path", { d: "M0 -30 L9 4 L0 -2 L-9 4 Z", class: "compass-n" }, a);
       el("path", { d: "M0 30 L9 -4 L0 2 L-9 -4 Z", class: "compass-s" }, a);
       const rad = (rot - 90) * Math.PI / 180;
-      text(g, "N", { x: Math.cos(rad) * 54, y: Math.sin(rad) * 54 + 1, class: "compass-label", "text-anchor": "middle", "dominant-baseline": "middle" });
+      const nx = Math.cos(rad) * 54, ny = Math.sin(rad) * 54 + 1;
+      text(g, "N", { x: nx, y: ny, class: "compass-label", "text-anchor": "middle", "dominant-baseline": "middle", transform: up(nx, ny) });
     }
 
     // ---------- units ----------
@@ -135,23 +149,29 @@
         role: interactive ? "button" : null,
         "aria-label": interactive ? (look.label || `${u.kind === "shop" ? "Shop" : "Plot"} ${u.no}`) : null,
         "aria-hidden": interactive ? null : "true",
-      }, svg);
+      }, root);
       const b = box(u);
       const inset = u.kind === "shop" ? 2 : 3;
       const style = look.fill ? `fill:${look.fill}` : null;
       const shape = u.points
         ? el("polygon", { points: u.points, class: "unit-shape", style }, g)
         : el("rect", { x: b.x + inset, y: b.y + inset, width: b.w - inset * 2, height: b.h - inset * 2, rx: u.kind === "shop" ? 2.5 : 5, class: "unit-shape", style }, g);
-      if (u.kind === "ews") shape.setAttribute("fill", `url(#${id}hatch)`);
+      if (u.kind === "ews") shape.setAttribute("style", `fill:url(#${id}hatch)`);  // inline so the CSS colours don't override it
       const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
-      const fs = u.kind === "shop" ? Math.min(17, b.w * 0.55) : Math.min(34, b.w * 0.42, b.h * 0.34);
+      // on screen a shop reads sideways in the normal layout and straight when rotated
+      const fs = u.kind === "shop" ? Math.min(rot ? 19 : 17, b.w * (rot ? 0.62 : 0.55))
+        : rot ? Math.min(40, b.w * 0.52, b.h * 0.3) : Math.min(34, b.w * 0.42, b.h * 0.34);
       const label = u.no;
+      const ink = look.ink ? ";fill:" + look.ink : "";
       if (u.kind === "shop") {
         text(g, label, { x: cx, y: cy, class: "unit-no", "text-anchor": "middle", "dominant-baseline": "central",
-          style: `font-size:${fs}px${look.ink ? ";fill:" + look.ink : ""}`, transform: `rotate(-90 ${cx} ${cy})` });
+          style: `font-size:${fs}px${ink}`, transform: `rotate(-90 ${cx} ${cy})` });
+      } else if (rot) {
+        text(g, label, { x: cx, y: cy, class: "unit-no", "text-anchor": "middle", "dominant-baseline": "central",
+          style: `font-size:${fs}px${ink}`, transform: up(cx, cy) });
       } else {
         text(g, label, { x: cx, y: cy - (look.badge ? fs * 0.35 : u.kind === "ews" ? 14 : 0), class: "unit-no", "text-anchor": "middle", "dominant-baseline": "central",
-          style: `font-size:${fs}px${look.ink ? ";fill:" + look.ink : ""}` });
+          style: `font-size:${fs}px${ink}` });
         if (look.badge && b.h > 60) text(g, look.badge, { x: cx, y: cy + fs * 0.75, class: "unit-badge", "text-anchor": "middle", "dominant-baseline": "central", style: `font-size:${Math.min(18, fs * 0.62)}px` });
       }
       if (interactive) {
@@ -173,12 +193,16 @@
       const bs = ews.map(box);
       const x0 = Math.min(...bs.map((b) => b.x)), x1 = Math.max(...bs.map((b) => b.x + b.w));
       const y1 = Math.max(...bs.map((b) => b.y + b.h));
-      const t = text(svg, "E.W.S. (RESERVED)", { x: (x0 + x1) / 2, y: y1 - 16, class: "ews-label", "text-anchor": "middle" });
-      void t;
+      if (!rot) text(root, "E.W.S. (RESERVED)", { x: (x0 + x1) / 2, y: y1 - 16, class: "ews-label", "text-anchor": "middle" });
     }
 
     return {
-      svg,
+      svg, outerW, outerH,
+      // layout rectangle -> SVG coordinates
+      toOuter(r) {
+        const x = r.x - vx, y = r.y - vy;
+        return rot ? { x: vh - (y + r.h), y: x, w: r.h, h: r.w } : { x, y, w: r.w, h: r.h };
+      },
       select(no) {
         for (const k in nodes) nodes[k].g.classList.toggle("is-selected", k === no);
         if (no && nodes[no]) nodes[no].g.parentNode.appendChild(nodes[no].g); // bring to front for the outline
