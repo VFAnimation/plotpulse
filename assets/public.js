@@ -16,9 +16,17 @@
   $("heroTitle").textContent = C.name;
   $("heroLede").textContent = C.tagline;
   $("footName").textContent = C.name;
-  $("footBuilder").textContent = `Developed by ${C.builder}`;
-  $("credit").textContent = CFG.credit.name;
-  $("credit").href = CFG.credit.url;
+  $("footBuilder").innerHTML = `Developed by <strong>${esc(C.builder)}</strong>`;
+  const CR = CFG.credit;
+  $("credit").textContent = CR.name;
+  $("credit").href = CR.url;
+  $("creditWork").textContent = CR.work || "Website and visualisation";
+  if (CR.whatsapp) {
+    $("creditWa").href = `https://wa.me/${CR.whatsapp}?text=${encodeURIComponent((CR.whatsappMessage || "").replace("{colony}", C.name))}`;
+    $("creditWaText").textContent = `WhatsApp ${CR.name}`;
+  } else {
+    $("creditWa").remove();
+  }
 
   const generalWa = `https://wa.me/${CFG.whatsapp}?text=${encodeURIComponent(`Hi, I'd like to know more about ${C.name}.`)}`;
   $("navCta").href = generalWa;

@@ -107,5 +107,12 @@ window.PLOTPULSE_CONFIG = {
   // Demo mode only: password for the builder dashboard
   demoPassword: "demo123",
 
-  credit: { name: "VF Animation", url: "https://github.com/VFAnimation" },
+  // Your credit in the footer. The WhatsApp button lets other builders reach you.
+  credit: {
+    name: "Vision Forge",
+    work: "3D Animation + VR Tour + Web Master Plan",
+    url: "https://visionforge.co.in",
+    whatsapp: "918837568307",
+    whatsappMessage: "Hi Vision Forge, I saw your work on the {colony} website. I'd like something similar for my project.",
+  },
 };

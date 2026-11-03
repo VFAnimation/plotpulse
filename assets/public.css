@@ -261,8 +261,20 @@ body.map-open .sheet { z-index: 60; }
 /* ---------- Footer ---------- */
 .foot { background: var(--pine); color: #e6e9e2; padding: 56px 0 30px; }
 .foot-inner { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; padding-bottom: 30px; border-bottom: 1px solid rgba(230, 233, 226, 0.15); }
+.foot-builder { font-size: 17px; }
 .foot-name { font: 500 40px/1 var(--font-display); margin: 0 0 6px; }
 .foot-builder { margin: 0; color: #b7c0b9; }
+.foot-builder strong { color: #e6e9e2; font-weight: 500; }
+/* your credit: clearly visible, one step quieter than the builder */
+.foot-credit { display: flex; justify-content: space-between; align-items: center; gap: 14px 24px; flex-wrap: wrap; padding-top: 22px; padding-bottom: 22px; border-bottom: 1px solid rgba(230, 233, 226, 0.15); }
+.foot-credit p { margin: 0; }
+.credit-work { font-size: 14px; letter-spacing: 0.02em; color: #b7c0b9; }
+.credit-by { font-size: 15px; color: #b7c0b9; margin-top: 2px !important; }
+.credit-by a { font: 600 22px var(--font-display); color: var(--brass-soft); text-decoration: none; margin-left: 2px; }
+.credit-by a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.credit-wa { display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 16px 0 12px; border-radius: 999px; text-decoration: none; font-size: 14px; color: var(--brass-soft); box-shadow: 0 0 0 1px rgba(216, 195, 154, 0.5) inset; }
+.credit-wa:hover { background: rgba(216, 195, 154, 0.1); }
+.credit-wa svg { width: 17px; height: 17px; }
 .foot-small { padding-top: 22px; font-size: 14px; color: #a6b0a8; display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
 .foot-small p { margin: 0; max-width: 70ch; }
 .foot-small a { color: var(--brass-soft); }
@@ -315,4 +327,8 @@ body.map-open .sheet { z-index: 60; }
   .count b { font-size: 28px; }
   .count span { font-size: 14px; line-height: 1.25; }
   .foot-name { font-size: 32px; }
+  /* .wrap's side padding above resets these, so set them again */
+  .foot .foot-inner { padding-bottom: 26px; }
+  .foot .foot-credit { padding-top: 20px; padding-bottom: 20px; }
+  .foot .foot-small { padding-top: 20px; }
 }
