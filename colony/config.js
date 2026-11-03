@@ -5,10 +5,10 @@
  */
 window.PLOTPULSE_CONFIG = {
   colony: {
-    name: "Chohak Land",
+    name: "Royal Residency",
     tagline: "Residential plots and shops, with a park, community centre and wide internal roads.",
-    builder: "Builder name here",          // e.g. "XYZ Developers Pvt. Ltd."
-    builderShort: "CL",                     // 2 letters for the logo badge, until there's a logo
+    builder: "MS Builders",
+    builderShort: "RR",                     // 2 letters for the logo badge, until there's a logo
     city: "Punjab",
     // Short lines shown in the hero, like a brochure. Keep them true to the approved plan.
     highlights: [

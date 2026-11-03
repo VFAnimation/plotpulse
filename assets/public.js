@@ -10,7 +10,7 @@
 
   // ---------- Static content from config ----------
   const C = CFG.colony;
-  document.title = `${C.name}, plots and shops`;
+  document.title = `${C.name}, plots and shops by ${C.builder}`;
   $("brandMark").textContent = C.builderShort;
   $("brandName").textContent = C.name;
   $("heroTitle").textContent = C.name;
