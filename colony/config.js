@@ -28,9 +28,9 @@ window.PLOTPULSE_CONFIG = {
 
   // Google Maps pin. Used for the embedded map and the "Open in Google Maps" link.
   location: {
-    lat: 30.8536,
-    lng: 75.8216,
-    address: "Site address here, Punjab",   // replace with the real address and map pin
+    lat: 31.33923415606237,
+    lng: 75.629901124966,
+    address: "Jalandhar, Punjab",   // add the road / village name for a fuller address
     nearby: [
       // Sample distances. Replace with real ones for the site.
       { name: "Main highway", distance: "1 km" },
