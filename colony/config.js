@@ -54,6 +54,9 @@ window.PLOTPULSE_CONFIG = {
   // 360 tour scenes. Images are 2:1 equirectangular JPGs.
   // Hotspots: yaw/pitch in degrees, "to" = scene id to jump to.
   tour: {
+    // A 360 / VR tour hosted elsewhere. When set, it's shown on the page and the
+    // scenes below are ignored. Leave it as "" to use the images in colony/panos.
+    url: "https://visionforge.co.in/mb041/cortizoshowroom/",
     first: "entrance",
     scenes: {
       entrance: {

@@ -215,6 +215,20 @@ body.map-open .sheet { z-index: 60; }
 .tour-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(0.82); }
 .tour-cover .btn { position: relative; }
 .pano { position: absolute; inset: 0; }
+.tour-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+.tour-stage.is-linked .tour-cover {
+  background:
+    radial-gradient(70% 90% at 50% 110%, rgba(216, 195, 154, 0.35), transparent 70%),
+    radial-gradient(50% 60% at 50% 40%, rgba(255, 255, 255, 0.06), transparent 70%),
+    #16291f;
+}
+.tour-stage.is-linked .tour-cover::before {
+  content: "360°"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -78%);
+  font: 500 clamp(90px, 18vw, 220px)/1 var(--font-display); color: rgba(216, 195, 154, 0.16); pointer-events: none;
+}
+.tour-stage.is-linked .tour-cover .btn { transform: translateY(40%); }
+.btn-tour-open { background: transparent; color: #eef0ea; box-shadow: 0 0 0 1px rgba(238, 240, 234, 0.45) inset; min-height: 44px; font-size: 15px; }
+.btn-tour-open:hover { background: rgba(238, 240, 234, 0.1); }
 .scene-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
 .tour .chip { background: transparent; color: #eef0ea; box-shadow: 0 0 0 1px rgba(238, 240, 234, 0.35); }
 .tour .chip[aria-pressed="true"] { background: var(--brass-soft); color: var(--ink); box-shadow: none; }

@@ -319,54 +319,81 @@
 
   // ---------- 360 tour (Pannellum, loaded only when started) ----------
   const T = CFG.tour;
-  let viewer = null;
-  const chips = $("sceneChips");
-  $("tourCoverImg").src = T.scenes[T.first].image;
-  chips.innerHTML = Object.entries(T.scenes).map(([id, s]) =>
-    `<button class="chip" type="button" data-scene="${id}" aria-pressed="${id === T.first}">${esc(s.title)}</button>`).join("");
+  if (T.url) setupLinkedTour(); else setupOwnTour();
 
-  function loadAsset(tag, attrs) {
-    return new Promise((res, rej) => {
-      const n = document.createElement(tag);
-      Object.assign(n, attrs); n.onload = res; n.onerror = rej;
-      document.head.appendChild(n);
+  // A tour hosted elsewhere (your 360 / VR tour link): shown inside the page, loaded on tap
+  function setupLinkedTour() {
+    const stage = $("tourStage");
+    stage.classList.add("is-linked");
+    $("tourCoverImg").remove();
+    $("tourHint").textContent = "Drag to look around. On a phone, open it full screen for the best view, or use VR mode in the tour.";
+    $("sceneChips").innerHTML = `<a class="btn btn-tour-open" id="tourOpen" href="${esc(T.url)}" target="_blank" rel="noopener">Open the tour full screen</a>`;
+    $("tourOpen").addEventListener("click", () => Store.track("tour_view"));
+    $("tourStart").addEventListener("click", () => {
+      const f = document.createElement("iframe");
+      f.src = T.url;
+      f.title = `360° tour of ${C.name}`;
+      f.allow = "fullscreen; gyroscope; accelerometer; magnetometer; xr-spatial-tracking; vr";
+      f.allowFullscreen = true;
+      f.className = "tour-frame";
+      $("pano").appendChild(f);
+      $("pano").hidden = false;
+      $("tourCover").remove();
+      Store.track("tour_view");
     });
   }
-  function hotspot(div, args) {
-    div.classList.add("pp-hot");
-    const s = document.createElement("span"); s.textContent = args; div.appendChild(s);
-  }
-  async function startTour(sceneId) {
-    if (viewer) { viewer.loadScene(sceneId); return; }
-    $("tourStart").textContent = "Loading the tour";
-    await Promise.all([
-      loadAsset("link", { rel: "stylesheet", href: "assets/vendor/pannellum/pannellum.css" }),
-      loadAsset("script", { src: "assets/vendor/pannellum/pannellum.js" }),
-    ]);
-    const scenes = {};
-    for (const [id, s] of Object.entries(T.scenes)) {
-      scenes[id] = {
-        title: s.title, type: "equirectangular", panorama: s.image, hfov: 100,
-        hotSpots: s.hotspots.map((h) => ({ pitch: h.pitch, yaw: h.yaw, type: "scene", sceneId: h.to, cssClass: "pp-hot-base", createTooltipFunc: hotspot, createTooltipArgs: h.text })),
-      };
+
+  // Our own 360 images (colony/panos), shown with the Pannellum viewer
+  function setupOwnTour() {
+    let viewer = null;
+    const chips = $("sceneChips");
+    $("tourCoverImg").src = T.scenes[T.first].image;
+    chips.innerHTML = Object.entries(T.scenes).map(([id, s]) =>
+      `<button class="chip" type="button" data-scene="${id}" aria-pressed="${id === T.first}">${esc(s.title)}</button>`).join("");
+
+    function loadAsset(tag, attrs) {
+      return new Promise((res, rej) => {
+        const n = document.createElement(tag);
+        Object.assign(n, attrs); n.onload = res; n.onerror = rej;
+        document.head.appendChild(n);
+      });
     }
-    $("pano").hidden = false;
-    viewer = window.pannellum.viewer("pano", {
-      default: { firstScene: sceneId, autoLoad: true, sceneFadeDuration: 600, showControls: true, compass: false },
-      scenes,
+    function hotspot(div, args) {
+      div.classList.add("pp-hot");
+      const s = document.createElement("span"); s.textContent = args; div.appendChild(s);
+    }
+    async function startTour(sceneId) {
+      if (viewer) { viewer.loadScene(sceneId); return; }
+      $("tourStart").textContent = "Loading the tour";
+      await Promise.all([
+        loadAsset("link", { rel: "stylesheet", href: "assets/vendor/pannellum/pannellum.css" }),
+        loadAsset("script", { src: "assets/vendor/pannellum/pannellum.js" }),
+      ]);
+      const scenes = {};
+      for (const [id, s] of Object.entries(T.scenes)) {
+        scenes[id] = {
+          title: s.title, type: "equirectangular", panorama: s.image, hfov: 100,
+          hotSpots: s.hotspots.map((h) => ({ pitch: h.pitch, yaw: h.yaw, type: "scene", sceneId: h.to, cssClass: "pp-hot-base", createTooltipFunc: hotspot, createTooltipArgs: h.text })),
+        };
+      }
+      $("pano").hidden = false;
+      viewer = window.pannellum.viewer("pano", {
+        default: { firstScene: sceneId, autoLoad: true, sceneFadeDuration: 600, showControls: true, compass: false },
+        scenes,
+      });
+      viewer.on("scenechange", (id) => {
+        chips.querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", c.dataset.scene === id));
+      });
+      $("tourCover").remove();
+      Store.track("tour_view");
+    }
+    $("tourStart").addEventListener("click", () => startTour(T.first).catch(() => { $("tourStart").textContent = "The tour didn't load. Tap to try again."; }));
+    chips.addEventListener("click", (e) => {
+      const b = e.target.closest(".chip"); if (!b) return;
+      chips.querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", c === b));
+      startTour(b.dataset.scene).catch(() => {});
     });
-    viewer.on("scenechange", (id) => {
-      chips.querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", c.dataset.scene === id));
-    });
-    $("tourCover").remove();
-    Store.track("tour_view");
   }
-  $("tourStart").addEventListener("click", () => startTour(T.first).catch(() => { $("tourStart").textContent = "The tour didn't load. Tap to try again."; }));
-  chips.addEventListener("click", (e) => {
-    const b = e.target.closest(".chip"); if (!b) return;
-    chips.querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", c === b));
-    startTour(b.dataset.scene).catch(() => {});
-  });
 
   // ---------- Keep demand fresh while the page is open ----------
   setInterval(async () => {
