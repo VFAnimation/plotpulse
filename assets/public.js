@@ -329,18 +329,32 @@
     $("tourHint").textContent = "Drag to look around. On a phone, open it full screen for the best view, or use VR mode in the tour.";
     $("sceneChips").innerHTML = `<a class="btn btn-tour-open" id="tourOpen" href="${esc(T.url)}" target="_blank" rel="noopener">Open the tour full screen</a>`;
     $("tourOpen").addEventListener("click", () => Store.track("tour_view"));
-    $("tourStart").addEventListener("click", () => {
+    // Starts by itself: the tour loads as the section comes near the screen
+    // (not on page open, so the plan still loads fast on mobile data).
+    $("tourStart").outerHTML = `<p class="tour-loading" id="tourStart">Loading the 360° tour</p>`;
+    let started = false;
+    function start() {
+      if (started) return;
+      started = true;
       const f = document.createElement("iframe");
       f.src = T.url;
       f.title = `360° tour of ${C.name}`;
       f.allow = "fullscreen; gyroscope; accelerometer; magnetometer; xr-spatial-tracking; vr";
       f.allowFullscreen = true;
       f.className = "tour-frame";
+      f.addEventListener("load", () => { const c = $("tourCover"); if (c) c.remove(); });
       $("pano").appendChild(f);
       $("pano").hidden = false;
-      $("tourCover").remove();
-      Store.track("tour_view");
-    });
+    }
+    const io = new IntersectionObserver((ents) => {
+      if (ents.some((e) => e.isIntersecting)) { start(); io.disconnect(); }
+    }, { rootMargin: "600px 0px" });
+    io.observe(stage);
+    // counted as a tour view once someone has actually had it on screen
+    const seen = new IntersectionObserver((ents) => {
+      if (ents.some((e) => e.intersectionRatio >= 0.5)) { Store.track("tour_view"); seen.disconnect(); }
+    }, { threshold: [0.5] });
+    seen.observe(stage);
   }
 
   // Our own 360 images (colony/panos), shown with the Pannellum viewer

@@ -226,7 +226,8 @@ body.map-open .sheet { z-index: 60; }
   content: "360°"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -78%);
   font: 500 clamp(90px, 18vw, 220px)/1 var(--font-display); color: rgba(216, 195, 154, 0.16); pointer-events: none;
 }
-.tour-stage.is-linked .tour-cover .btn { transform: translateY(40%); }
+.tour-stage.is-linked .tour-cover { z-index: 1; pointer-events: none; }
+.tour-loading { position: relative; margin: 0; transform: translateY(160%); color: #c3cbc4; font-size: 15px; }
 .btn-tour-open { background: transparent; color: #eef0ea; box-shadow: 0 0 0 1px rgba(238, 240, 234, 0.45) inset; min-height: 44px; font-size: 15px; }
 .btn-tour-open:hover { background: rgba(238, 240, 234, 0.1); }
 .scene-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
@@ -291,6 +292,8 @@ body.map-open .sheet { z-index: 60; }
   .sheet-empty { display: none; }
   .loc-grid, .trust { grid-template-columns: minmax(0, 1fr); }
   .tour-stage { aspect-ratio: 4 / 5; }
+  /* a hosted tour grabs swipes, so keep it short enough to scroll past on a phone */
+  .tour-stage.is-linked { aspect-ratio: 1 / 1; }
 }
 @media (max-width: 560px) {
   .wrap { padding: 0 16px; }
