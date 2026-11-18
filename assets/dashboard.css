@@ -115,6 +115,12 @@ figcaption { font: 600 22px var(--font-display); margin-bottom: 14px; }
 .inv-tools { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
 .allot-btn { font: 500 14px var(--font-body); border: 1px solid var(--line); background: var(--wheat); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
 .allot-btn:hover { border-color: var(--ink-3); }
+.actions { display: flex; gap: 6px; }
+.allot-btn.is-on, .hype-btn.is-on { background: #fbefca; border-color: #efd78e; }
+.hype { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.hype p { margin: 0 0 10px; font-size: 14px; color: var(--ink-2); }
+.hype-btn { width: 100%; font: 600 15px var(--font-body); padding: 10px; border-radius: 999px; border: 1px solid #efd78e; background: #fdf6e0; cursor: pointer; }
+.hype-btn:hover { background: #fbefca; }
 
 /* Settings */
 .settings { display: flex; flex-direction: column; gap: 14px; max-width: 760px; }

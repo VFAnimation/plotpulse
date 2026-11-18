@@ -18,7 +18,7 @@
 
   await Store.init("../");
   const demo = Store.mode === "demo";
-  $("modeBadge").textContent = demo ? "Demo data" : "Live";
+  $("modeBadge").textContent = demo ? "Demo data" : Store.mode === "offline" ? "Offline" : "Live";
   $("modeBadge").className = "mode " + (demo ? "demo" : "live");
   $("loginHint").textContent = demo
     ? "Demo mode: use any email. The password is set in colony/config.js."
@@ -37,7 +37,10 @@
       await Store.backend.signIn($("email").value.trim(), $("password").value);
       await showApp();
     } catch (err) {
-      $("loginError").textContent = err.message || "Couldn't sign in. Check the email and password.";
+      const m = String((err && err.message) || "");
+      $("loginError").textContent = /fetch|network|offline|timeout|load failed|json|unexpected token/i.test(m)
+        ? "Can't reach the database. If the Supabase project is paused, open supabase.com, select the project and click Restore, then try again in a few minutes."
+        : m || "Couldn't sign in. Check the email and password.";
     } finally { $("loginBtn").disabled = false; }
   });
   $("signOut").addEventListener("click", async () => {
@@ -82,7 +85,7 @@
   }
 
   // ---------- State ----------
-  let allUnits = [], plots = [], events = [], prevEvents = [], perPlot = {}, selectedNo = null, heat = null;
+  let allUnits = [], plots = [], events = [], prevEvents = [], perPlot = {}, hotInfo = {}, selectedNo = null, heat = null;
 
   async function refresh() {
     const days = Number($("period").value);
@@ -93,6 +96,7 @@
     events = all.filter((e) => e.t >= cut);
     prevEvents = all.filter((e) => e.t < cut);
     perPlot = Store.aggregateDemand(events);
+    hotInfo = (await Store.demand()).byPlot;   // what the public page shows as "in demand"
     renderKpis(days);
     renderHeat();
     renderInsights();
@@ -150,6 +154,7 @@
         return {
           cls: p.status === "allotted" ? "is-allotted" : "",
           fill: HEAT[s],
+          badge: (hotInfo[p.no] || {}).hot ? "🔥" : null,
           label: `${name(p)}: ${d.viewers} people viewed, ${d.enquiries} enquiries`,
         };
       },
@@ -185,8 +190,40 @@
       <div class="toggle-row" role="group" aria-label="Plot status">
         <button type="button" class="seg is-available" aria-pressed="${p.status === "available"}" data-set="available">Available</button>
         <button type="button" class="seg is-allotted" aria-pressed="${p.status === "allotted"}" data-set="allotted">Allotted</button>
-      </div>`;
+      </div>
+      ${p.status === "available" ? hypeBlock(p) : ""}`;
     el.querySelectorAll(".seg").forEach((b) => b.addEventListener("click", () => setStatus(p.no, b.dataset.set)));
+    const hb = el.querySelector(".hype-btn");
+    if (hb) hb.addEventListener("click", () => setHot(p.no, hb.dataset.on === "1"));
+  }
+
+  // "In demand" on the public page: automatic (most viewed) or marked by the builder
+  function hotState(p) {
+    const h = hotInfo[p.no] || {};
+    if (p.status !== "available") return "none";
+    return h.manualHot ? "manual" : h.autoHot ? "auto" : "none";
+  }
+  function hypeBlock(p) {
+    const st = hotState(p);
+    const note = {
+      manual: "You marked this as in demand. It shows yellow with 🔥 on the public page.",
+      auto: "Shown as in demand automatically, because many people are viewing it.",
+      none: "Not shown as in demand. Mark it to make it yellow with 🔥 on the public page.",
+    }[st];
+    const btn = st === "manual"
+      ? `<button type="button" class="hype-btn is-on" data-on="0">Remove in-demand mark</button>`
+      : st === "auto" ? `<button type="button" class="hype-btn" data-on="1">Keep it in demand</button>`
+      : `<button type="button" class="hype-btn" data-on="1">🔥 Mark as in demand</button>`;
+    return `<div class="hype"><p>${note}</p>${btn}</div>`;
+  }
+  async function setHot(no, on) {
+    const p = plots.find((x) => x.no === no);
+    if (!p) return;
+    try {
+      await Store.backend.setHot(no, on, p.status);
+      toast(on ? `${name(p)} marked as in demand` : `In-demand mark removed from ${name(p).toLowerCase()}`);
+      await refresh();
+    } catch (e) { toast(e.message && /database update/.test(e.message) ? e.message : "Couldn't save. Check your connection and try again."); }
   }
 
   async function setStatus(no, status) {
@@ -232,7 +269,6 @@
 
     const rows = plots.map((p) => ({ p, ...(perPlot[p.no] || { viewers: 0, enquiries: 0 }) }));
     const top = rows.slice().sort((a, b) => b.viewers - a.viewers).slice(0, 8);
-    const statusCell = (p) => `<span class="status ${p.status}">${p.status === "allotted" ? "Allotted" : "Available"}</span>`;
     $("tblTop").innerHTML = `<thead><tr><th>Unit</th><th>Area</th><th>Facing</th><th class="num">Viewed</th><th class="num">Enquiries</th><th>Status</th></tr></thead><tbody>${
       top.map((r) => `<tr><td><strong>${esc(name(r.p))}</strong></td><td>${gajText(r.p.gaj)} gaj</td><td>${esc(r.p.facing)}</td><td class="num">${r.viewers}</td><td class="num">${r.enquiries}</td><td>${statusCell(r.p)}</td></tr>`).join("")}</tbody>`;
 
@@ -318,6 +354,12 @@
   }
 
   // ---------- Inventory ----------
+  function statusCell(p) {
+    if (p.status === "allotted") return `<span class="status allotted">Allotted</span>`;
+    const st = hotState(p);
+    if (st === "none") return `<span class="status available">Available</span>`;
+    return `<span class="status demand">In demand <span class="muted">(${st === "manual" ? "marked by you" : "automatic"})</span></span>`;
+  }
   function renderInventory() {
     const q = $("invSearch").value.trim().toLowerCase();
     const f = $("invFilter").value;
@@ -333,13 +375,17 @@
         const next = p.status === "allotted" ? "available" : "allotted";
         return `<tr><td><strong>${esc(name(p))}</strong></td><td>${gajText(p.gaj)} gaj <span class="muted">(${fmt(p.sqft)} sq ft)</span></td><td>${esc(p.dims)}</td><td>${esc(p.facing)}</td><td>${type}</td>
           <td class="num">${d.viewers}</td><td class="num">${d.enquiries}</td>
-          <td><span class="status ${p.status}">${p.status === "allotted" ? "Allotted" : "Available"}</span></td>
-          <td><button class="allot-btn" type="button" data-no="${esc(p.no)}" data-set="${next}">${next === "allotted" ? "Mark allotted" : "Mark available"}</button></td></tr>`;
+          <td>${statusCell(p)}</td>
+          <td class="actions"><button class="allot-btn" type="button" data-no="${esc(p.no)}" data-set="${next}">${next === "allotted" ? "Mark allotted" : "Mark available"}</button>${
+            p.status === "available" ? (hotState(p) === "manual"
+              ? `<button class="allot-btn hype-row is-on" type="button" data-hot="${esc(p.no)}" data-on="0">Remove 🔥</button>`
+              : `<button class="allot-btn hype-row" type="button" data-hot="${esc(p.no)}" data-on="1">Mark 🔥</button>`) : ""}</td></tr>`;
       }).join("")}</tbody>`;
   }
   $("invSearch").addEventListener("input", renderInventory);
   $("invFilter").addEventListener("change", renderInventory);
   $("tblInv").addEventListener("click", (e) => {
+    const h = e.target.closest("[data-hot]"); if (h) return setHot(h.dataset.hot, h.dataset.on === "1");
     const b = e.target.closest(".allot-btn"); if (b) setStatus(b.dataset.no, b.dataset.set);
   });
 

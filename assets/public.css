@@ -278,6 +278,9 @@ body.map-open .sheet { z-index: 60; }
 .foot-small { padding-top: 22px; font-size: 14px; color: #a6b0a8; display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
 .foot-small p { margin: 0; max-width: 70ch; }
 .foot-small a { color: var(--brass-soft); }
+.foot-small .pitch { color: #c9d0ca; }
+.foot-small .pitch strong { color: var(--brass-soft); font-weight: 500; }
+.foot-small .privacy { font-size: 13px; color: #8f9a92; }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 1080px) {

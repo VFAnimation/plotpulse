@@ -21,6 +21,7 @@
   $("credit").textContent = CR.name;
   $("credit").href = CR.url;
   $("creditWork").textContent = CR.work || "Website and visualisation";
+  $("creditPitch").innerHTML = esc(CR.pitch || "").replace(esc("{name}"), `<strong>${esc(CR.name)}</strong>`);
   if (CR.whatsapp) {
     $("creditWa").href = `https://wa.me/${CR.whatsapp}?text=${encodeURIComponent((CR.whatsappMessage || "").replace("{colony}", C.name))}`;
     $("creditWaText").textContent = `WhatsApp ${CR.name}`;

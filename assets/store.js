@@ -14,6 +14,7 @@
     anon: "pp_anon",
     events: "pp_events_v1",
     status: "pp_status_v1",
+    hot: "pp_hot_v1",
     settings: "pp_settings_v1",
     seen: "pp_seen_v1",
     session: "pp_session_v1",
@@ -134,7 +135,15 @@
       async demand(days) {
         return aggregateDemand(await this.events(days));
       },
-      async statuses() { return ls.get(LS.status, {}); },
+      // { plotNo: { status, hot } } for plots the builder has changed
+      async statuses() {
+        const st = ls.get(LS.status, {}), hot = ls.get(LS.hot, {}), out = {};
+        for (const k of new Set([...Object.keys(st), ...Object.keys(hot)])) out[k] = { status: st[k], hot: !!hot[k] };
+        return out;
+      },
+      async setHot(no, on) {
+        const h = ls.get(LS.hot, {}); if (on) h[no] = true; else delete h[no]; ls.set(LS.hot, h);
+      },
       async setStatus(no, status) {
         const s = ls.get(LS.status, {}); s[no] = status; ls.set(LS.status, s);
       },
@@ -172,8 +181,15 @@
     });
   }
 
+  // Used when the database library can't load at all: nothing live, nothing invented.
+  function offlineBackend() {
+    const none = async () => { throw new Error("offline"); };
+    return { mode: "offline", logEvent: async () => {}, events: none, demand: none, statuses: none, settings: none,
+      setStatus: none, setHot: none, saveSettings: none, signIn: none, signOut: async () => {}, session: async () => null };
+  }
+
   async function supabaseBackend() {
-    if (!window.supabase) await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2");
+    if (!window.supabase) await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js");
     const db = window.supabase.createClient(CFG.supabase.url, CFG.supabase.anonKey);
     const toMs = (r) => ({ t: Date.parse(r.created_at), type: r.type, plot: r.plot_no, anon: r.anon_id, src: r.source });
     return {
@@ -204,9 +220,16 @@
         return out;
       },
       async statuses() {
-        const { data, error } = await db.from("plot_status").select("plot_no,status");
-        if (error) throw error;
-        const out = {}; for (const r of data) out[r.plot_no] = r.status; return out;
+        // "hot" (builder's manual in-demand mark) needs the column added in schema.sql;
+        // if it isn't there yet, carry on without it rather than break the page.
+        let res = await db.from("plot_status").select("plot_no,status,hot");
+        if (res.error) res = await db.from("plot_status").select("plot_no,status");
+        if (res.error) throw res.error;
+        const out = {}; for (const r of res.data) out[r.plot_no] = { status: r.status, hot: !!r.hot }; return out;
+      },
+      async setHot(no, on, status) {
+        const { error } = await db.from("plot_status").upsert({ plot_no: no, status: status || "available", hot: !!on, updated_at: new Date().toISOString() });
+        if (error) throw new Error(/hot/.test(error.message) ? "The in-demand switch needs one database update first (see README)." : error.message);
       },
       async setStatus(no, status) {
         const { error } = await db.from("plot_status").upsert({ plot_no: no, status, updated_at: new Date().toISOString() });
@@ -239,7 +262,11 @@
       const res = await fetch((basePath || "") + "colony/plots.json", { cache: "no-cache" });
       this.plan = await res.json();
       const live = CFG.supabase && CFG.supabase.url && CFG.supabase.anonKey;
-      this.backend = live ? await supabaseBackend() : demoBackend(this.plan.units);
+      try {
+        this.backend = live ? await supabaseBackend() : demoBackend(this.plan.units);
+      } catch (e) {
+        this.backend = offlineBackend();
+      }
       return this;
     },
 
@@ -247,11 +274,27 @@
 
     // Every unit on the map (plots, shops, E.W.S.) with its current status.
     // E.W.S. units are always "reserved"; the builder can't allot them from the dashboard.
+    // If the database can't be reached (for example a free Supabase project that has
+    // paused), the map still shows from plots.json, just without live statuses and counts.
+    offline: false,
+    async safe(promise, fallback) {
+      try {
+        return await Promise.race([promise, new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 8000))]);
+      } catch (e) {
+        this.offline = true;
+        return fallback;
+      }
+    },
+
     async plots() {
-      const st = await this.backend.statuses();
-      return this.plan.units.map((p) => Object.assign({}, p, {
-        status: p.kind === "ews" ? "reserved" : (st[p.no] || p.status || "available"),
-      }));
+      const st = await this.safe(this.backend.statuses(), {});
+      return this.plan.units.map((p) => {
+        const m = st[p.no] || {};
+        return Object.assign({}, p, {
+          status: p.kind === "ews" ? "reserved" : (m.status || p.status || "available"),
+          manualHot: p.kind !== "ews" && !!m.hot,   // builder marked it "in demand" himself
+        });
+      });
     },
 
     // Logs an anonymous event. plot_view is counted once per plot per browser per day.
@@ -267,10 +310,11 @@
       this.backend.logEvent(e).catch(() => {});
     },
 
-    // Returns { [plotNo]: { viewers, enquiries, hot } } for the public map
+    // Returns { [plotNo]: { viewers, enquiries, hot, autoHot, manualHot } } for the public map.
+    // A plot is "in demand" if it's among the most viewed (automatic) or the builder marked it.
     async demand() {
-      const s = await this.backend.settings();
-      const d = await this.backend.demand(s.windowDays);
+      const s = await this.safe(this.backend.settings(), Object.assign({}, CFG.demand));
+      const d = await this.safe(this.backend.demand(s.windowDays), {});
       const plots = await this.plots();
       const avail = plots.filter((p) => p.status === "available" && p.kind !== "ews")
         .map((p) => ({ no: p.no, v: (d[p.no] || {}).viewers || 0 }))
@@ -281,7 +325,8 @@
       const out = {};
       for (const p of plots) {
         const r = d[p.no] || { viewers: 0, enquiries: 0 };
-        out[p.no] = { viewers: r.viewers, enquiries: r.enquiries, hot: hot.has(p.no) };
+        const autoHot = hot.has(p.no), manualHot = p.status === "available" && p.manualHot;
+        out[p.no] = { viewers: r.viewers, enquiries: r.enquiries, hot: autoHot || manualHot, autoHot, manualHot };
       }
       return { byPlot: out, settings: s };
     },

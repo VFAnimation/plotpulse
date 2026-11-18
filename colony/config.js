@@ -113,6 +113,8 @@ window.PLOTPULSE_CONFIG = {
     work: "3D Animation + VR Tour + Web Master Plan",
     url: "https://visionforge.co.in",
     whatsapp: "918837568307",
+    // Short line at the very bottom, aimed at other builders who visit the page
+    pitch: "This page is designed by {name}. Builders, imagine this for your project: buyers explore every plot live, enquiries land straight on your WhatsApp, and you see which plots people want most.",
     whatsappMessage: "Hi Vision Forge, I saw your work on the {colony} website. I'd like something similar for my project.",
   },
 };
